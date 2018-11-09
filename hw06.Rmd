@@ -1,0 +1,444 @@
+---
+title: "Homework 6:Data wrangling wrap up"
+theme: yeti
+output:
+  github_document:
+    toc: yes
+    df_print: paged
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Character Data
+Loading libraries:
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(stringr))
+```
+
+#### Basics
+```{r}
+simpleStr <- "Simple string"
+strWithQuotes <- 'Note I\'m using single quotes and escape chars to \"make it fancy\"\nNew line added above'
+writeLines(strWithQuotes) # to write clean version - without escapes
+```
+
+Simple operations
+```{r}
+?str_c
+str_length(simpleStr)
+str_c("These strings", "are actually combined", "by a comma", sep=", ")
+str_c(c("These strings", "are actually combined", "by a comma"), collapse = ", ") # easier to see
+# str_c is verctorised, so we can add prefix, and suffix for a vector as below
+str_c("beforeStr ", c("a", "b", "c"), " afterStr")
+```
+
+Substringing is very useful
+```{r}
+weekDays <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+str_sub(weekDays, 1, 3) 
+# negative numbers count backwards from end
+str_sub(weekDays, -3, -1)
+# we can also modify first element of every item in the vector
+str_sub(weekDays, 1, 1) <- str_to_lower(str_sub(weekDays, 1, 1))
+weekDays
+```
+
+Using locale for sorting. 
+
+For more information refer to [Iso list](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
+```{r}
+str_sort(weekDays, locale = "haw") # Hawaiian
+str_sort(weekDays, locale = "en") # English
+```
+
+Chosen exercise:
+```{r}
+?str_trim
+dirtySentence <- "     No spaces in front/end of string.       "
+str_trim(dirtySentence)
+```
+
+#### Regular expressions
+```{r}
+# Usage of '.': Meaning any one character
+str_view(c("Monday", "Tuesday"), ".day")
+str_view(c("Mon.day", "Tuesday"), "\\.day") # escape character for . itself!
+str_view(c("lay\\lom"), ".\\\\") # Escape for '\' character itself!
+```
+
+Matching more complicated sequences like `"'\`:
+```{r}
+complicatedStr <- 'something\"\'\\something'
+writeLines(complicatedStr)
+str_view(complicatedStr, "\"\\'\\\\")
+```
+
+Anchors for making the regular expression so that it matches from the start or end of the string.
+```{r echo=FALSE}
+anchorStr <- c("all", "starting", "with", "a", "ending", "with", "h")
+str_view(anchorStr, "^a")
+str_view(anchorStr, "h$")
+```
+
+Matching literal string `$^$`
+```{r}
+litStr <- "before$^$after"
+str_view(litStr, "\\$\\^\\$")
+```
+
+There are a number of special patterns that match more than one character. You've already seen `.`, which matches any character apart from a newline. There are four other useful tools:
+
+* `\d`: matches any digit.
+* `\s`: matches any whitespace (e.g. space, tab, newline).
+* `[abc]`: matches a, b, or c.
+* `[^abc]`: matches anything except a, b, or c.
+
+Therefore we need to be careful and excape the `\d`. 
+Star `*` symbol is special for regex, it means 0 or more instances of previous character, but using `[]` means literally match all characters within the brackets.
+```{r}
+abcRegex <- c("abc", "a.c", "a*c", "a c")
+str_view(abcRegex, "a[*]c")
+str_view(abcRegex, "a[.]c")
+str_view(abcRegex, ".[ ]c")
+str_view(c("color", "colour"), "colo(|u)r") # picks both due to usage of `|` operator
+```
+
+How many times a pattern matches is defined by:
+
+* `?`: 0 or 1
+* `+`: 1 or more
+* `*`: 0 or more
+
+To specify the number of matches precisely:
+
+* `{n}`: exactly n
+* `{n,}`: n or more
+* `{,m}`: at most m
+* `{n,m}`: between n and m
+```{r}
+matchings <- "MDCCCLXXXVIII is 1888 in roman numerals"
+str_view(matchings, "CC?")
+str_view(matchings, "CC+")
+str_view(matchings, 'C[LX]+') # will match CLXXX
+str_view(matchings, "C{2}") # will match only CC
+str_view(matchings, "C{2,}") # will match 2 or more Cs
+```
+
+We can also backreference as so:
+```{r}
+# Find any repetition of any two letters
+str_view(c("ananas", "banana", "apapa", "aaaaa"), "(..)\\1", match = TRUE)
+
+```
+
+#### Tools
+To determine if a character vector matches a pattern, we use str_detect(). 
+It returns a logical vector the same length as the input:
+```{r}
+repStr <- c("ananas", "banana", "apapa", "aaaaa")
+str_detect(repStr, "w") # none has 'w'
+str_detect(repStr, "a") # they all have 'a'
+```
+
+```{r}
+# How many weekday names start with t?
+sum(str_detect(weekDays, "^t")) 
+```
+
+Playing with vowels and consonants:
+```{r}
+# Find all words containing at least one vowel, and negate
+no_vowels_1 <- !str_detect(c("abbb", "eddd"), "[aeiou]")
+# Find all words consisting only of consonants (non-vowels)
+no_vowels_2 <- str_detect(c("abbb", "addd"), "^[^aeiou]+$")
+identical(no_vowels_1, no_vowels_2)
+```
+
+Matching patterns can be done in 2 ways - logical subsetting(1) or `str_subset` wrapper(2) :
+```{r}
+words[str_detect(words, "x$")] #(1)
+str_subset(words, "x$") #(2)
+```
+
+A variation on `str_detect()` is `str_count()`: rather than a simple yes or no, it tells you how many matches there are in a string:
+
+```{r}
+fruitNames <- c("apple", "banana", "pear")
+str_count(fruitNames, "a")
+
+# On average, how many vowels per word?
+mean(str_count(words, "[aeiou]"))
+```
+
+We can also use `mutate` as so, to get matches in a tibble for further usage:
+```{r}
+df <- tibble(
+  word = fruitNames,
+  i = seq_along(word)
+)
+
+df %>%
+  mutate(
+    vowels = str_count(word, "[aeiou]"),
+    consonants = str_count(word, "[^aeiou]")
+  )
+```
+
+Matches are not overlapping: 
+```{r}
+str_count("abababa", "aba")
+str_view_all("abababa", "aba")
+```
+
+If we have a corpus, and want to identify all sentences containing a color we could do this:
+```{r}
+# Notice this will not include words like "flickered"!
+colours <- c(" red", " orange", " yellow", " green", " blue", " purple")
+allColours <- str_c(colours, collapse = "|")
+manyColorSent <- sentences[str_count(sentences, allColours) > 1]
+str_view_all(manyColorSent, allColours)
+str_extract(manyColorSent, allColours) # which colors matched from above?
+str_extract_all(manyColorSent, allColours, simplify = TRUE) # exactly which ones, for each sentence?
+```
+
+From the Harvard sentences data, let's extract:
+
+The first word from each sentence.
+```{r}
+head(sentences)
+firstWords <- str_extract(sentences, "([A-Za-z]+)")
+head(firstWords)
+```
+
+All words ending in ing.
+```{r}
+allWords <- str_extract_all(sentences, boundary("word")) # take all words
+allWordsList <- unlist(allWords) # make a char vector
+ingWords <- str_match_all(allWordsList, ".+ing") # only ing ending words
+unlist(ingWords)
+```
+
+Matching `a ___` and `the ___`:
+```{r}
+noun <- "(a|the) ([^ ]+)"
+has_noun <- sentences %>%
+  str_subset(noun) %>%
+  head(10)
+# To get a vector
+has_noun %>% 
+  str_extract(noun)
+# To get a matrix
+has_noun %>% 
+  str_match(noun)
+```
+
+Replacing vowels:
+```{r}
+fruitNames <- c("apple", "pear", "banana")
+str_replace(fruitNames, "[aeiou]", "-") # replaces first vowel
+str_replace_all(fruitNames, "[aeiou]", "-") # replaces all vowels
+```
+
+Using backreferences:
+```{r}
+head(sentences)
+# First 3 words of each sentence have twisted order now.
+sentences %>% 
+  str_replace("([^ ]+) ([^ ]+) ([^ ]+)", "\\1 \\3 \\2") %>% 
+  head(6)
+```
+
+Splitting:
+```{r}
+sentences %>%
+  head(5) %>% 
+  str_split(" ", simplify = TRUE)
+str_view_all(sentences %>% head(1), boundary("word"))
+```
+
+#### Other types of patterns
+
+We can ignore case for matching patterns
+```{r}
+apples <- c("apple", "APPLE")
+str_view(apples, regex("apple", ignore_case = TRUE))
+```
+
+Recognizing phone numbers:
+```{r}
+phone <- regex("
+  \\+?                   # beginning +
+  (\\d{1,4})? # country code
+  [-]?                # optional closing parens, space, or dash
+  \\(?                  # optional opening parens
+  (\\d{3})              # area code
+  [) -]?                # optional closing parens, space, or dash
+  (\\d{3})              # another three numbers
+  [ -]?                 # optional space or dash
+  (\\d{4})              # three more numbers
+  ", comments = TRUE)
+
+str_match("604-908-8172", phone)
+str_match("+1-604-908-8172", phone)
+str_match("+12344-604-908-8172", phone) # erroneous, accepts only 2344
+```
+
+#### More reg ex
+
+`apropos()` searches all objects available from the global environment. 
+This is useful to better remember the name of the function.
+```{r}
+apropos("replace")
+```
+
+`dir()` lists all the files in a directory. 
+The `pattern` argument takes a regular expression and 
+only returns file names that match the pattern.
+For example, you can find all the R Markdown files in the current directory with:
+```{r}
+head(dir(pattern = "\\.Rmd$"))
+```
+
+#### stringi
+Using `stringi` to generate random text
+```{r}
+# make 10, length 2, text!
+stringi::stri_rand_strings(10, 2, pattern = "[A-Za-z0-9]")
+```
+
+# 2. Work with a list
+This tutorial is inspired by [this blogpost](http://varianceexplained.org/r/trump-tweets/). 
+
+## Trump Android words
+
+```{r}
+library(purrr)
+suppressMessages(library(dplyr))
+library(tibble)
+```
+
+Lets load tweets from Trump's account.
+```{r}
+load(url("http://varianceexplained.org/files/trump_tweets_df.rda"))
+tweets <- trump_tweets_df$text
+tweets %>% head(3) %>% strtrim(70)
+```
+
+Our mission: extract the following Trump Android words from the tweets.
+```{r}
+# Define Trump Android words!
+regex <- "badly|crazy|weak|spent|strong|dumb|joke|guns|funny|dead"
+# Chose only certain tweets that have necessary complexity
+tweets <- tweets[c(1, 2, 5, 6, 198, 347, 919)]
+tweets %>% strtrim(70)
+```
+
+#### Using `gregexpr()`
+The base function `gregexpr()` is used to locate all the Trump Android words inside the tweets. 
+
+```{r}
+(matches <- gregexpr(regex, tweets))
+# matches is a list, one element per each element of tweets
+# Each element is an integer vector.
+#   Its -1 if no matches found.
+#   Holds the position(s) of the first character of each match, otherwise.
+# Each element has two attributes. Consider match.length. Let us not speak of the other one.
+#   Its -1 if no matches found.
+#   Holds the length(s) of each match, otherwise.
+m <- matches[[7]]
+```
+
+Let's get to know this awkward list:
+```{r}
+attr(m, which = "match.length")
+```
+
+#### `purrr`ing data!
+
+Putting that into purrr:
+```{r}
+lens <- function(x) attr(x, which = "match.length")
+map(matches, lens)
+# or 
+(match_length <- map(matches, attr, which = "match.length"))
+```
+
+The above list con
+Let's compute how many Trump Android words appear in each tweet.
+```{r}
+m <- matches[[1]]
+sum(m > 0)
+m <- matches[[7]]
+sum(m > 0)
+```
+
+
+```{r}
+androidWords <- function(x) sum(x > 0)
+map(matches, androidWords) # the result is a list
+map_int(matches, androidWords) # the result is a vector
+```
+
+Confirm that this is, indeed, different from just taking the lengths of the elements of `matches`:
+```{r}
+tibble(
+  naive_length = lengths(matches),
+  n_words = map_int(matches, androidWords)
+)
+```
+
+Let's create an almost-copy of matches and call it `match_first`. How will it differ? Remove the attributes from the elements of matches, so there's less clutter when we print.
+
+Hint: `as.vector()` will strip attributes.
+```{r}
+(match_first <- map(matches, as.vector))
+```
+
+Let's check the 7th sentence. 
+```{r}
+(tweet <- tweets[7]) # get the tweet
+(t_first <- match_first[[7]]) # get the indexes of the first match of each android word appearing
+(t_length <- match_length[[7]]) # get lengths 
+(t_last <- t_first + t_length - 1) # compute end of android word
+substring(tweet, t_first, t_last) # substring them, to see which ones they are!
+```
+
+And now the first tweet. This shouldn't have any android word.
+```{r}
+(tweet <- tweets[1])
+(t_first <- match_first[[1]])
+(t_length <- match_length[[1]])
+(t_last <- t_first + t_length - 1)
+substring(tweet, t_first, t_last)
+```
+
+This is how we did the above exercises. Let's put these into purrr. 
+```{r}
+# first  <- an element of matches
+# length <- an element of match_length
+# last   <- first + length - 1
+(match_last <- map2(match_first, match_length, ~ .x + .y - 1))
+```
+
+This is all put together, the real magic of `purrr`!
+```{r}
+pmap(list(text = tweets, first = match_first, last = match_last), substring)
+```
+
+#### Concise summary of work done.
+
+Summary of everything we did in this part of the homework, being as concise as possible!
+```{r}
+tibble(text = tweets,
+       first = gregexpr(regex, tweets)) %>% 
+  mutate(match_length = map(first, ~ attr(.x, which = "match.length")),
+         last = map2(first, match_length, ~ .x + .y - 1)) %>%
+  select(-match_length) %>% 
+  pmap(substring)
+```
+
+Thanks for looking at my homework. Cheers!
