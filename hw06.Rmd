@@ -129,7 +129,7 @@ pattern <- "\\..\\..\\.." # pattern for these strings
 ```
 
 Anchors for making the regular expression so that it matches from the start or end of the string.
-```{r echo=FALSE}
+```{r}
 anchorStr <- c("all", "starting", "with", "a", "ending", "with", "h")
 str_view(anchorStr, "^a")
 str_view(anchorStr, "h$")
