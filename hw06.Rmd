@@ -57,7 +57,7 @@ str_sort(weekDays, locale = "en") # English
 
 Working through exercises:
 
-In code that doesn???t use stringr, you???ll often see paste() and paste0(). What???s the difference between the two functions? What stringr function are they equivalent to? How do the functions differ in their handling of NA?
+In code that doesnt use stringr, youll often see paste() and paste0(). Whats the difference between the two functions? What stringr function are they equivalent to? How do the functions differ in their handling of NA?
 
 Answer: The difference between `paste()` and `paste0()` is that the argument sep by default is " " (paste) and "" (paste0). `paste0()` is faster than `paste()` if our objective is to concatenate strings without spaces because we don't have to specify the argument sep
 ```{r}
@@ -85,7 +85,7 @@ Answer: You use it when you need to format some text in a nice manner, for ease 
 ?str_wrap
 ```
 
-What does str_trim() do? What???s the opposite of str_trim()?
+What does str_trim() do? Whats the opposite of str_trim()?
 Answer: We use it when we want to remove whitespace.  `str_pad()` is it's opposite
 ```{r}
 ?str_pad
@@ -159,7 +159,7 @@ pat <- '[A-Za-z0-9_]*t$'
 str_view(words %>% head(), pat)
 ```
 
-Are exactly four letters long. (Don???t cheat by using str_length()!)
+Are exactly four letters long. (Dont cheat by using str_length()!)
 Have seven letters or more.
 ```{r}
 pat_4 <- '^....$'
