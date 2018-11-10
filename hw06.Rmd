@@ -55,7 +55,43 @@ str_sort(weekDays, locale = "haw") # Hawaiian
 str_sort(weekDays, locale = "en") # English
 ```
 
-Chosen exercise:
+Working through exercises:
+
+In code that doesn???t use stringr, you???ll often see paste() and paste0(). What???s the difference between the two functions? What stringr function are they equivalent to? How do the functions differ in their handling of NA?
+
+Answer: The difference between `paste()` and `paste0()` is that the argument sep by default is " " (paste) and "" (paste0). `paste0()` is faster than `paste()` if our objective is to concatenate strings without spaces because we don't have to specify the argument sep
+```{r}
+?paste
+paste(c("aaa", "bb"), sep = "", collapse = "," )
+?paste0
+paste(c("aaa", "bb"),  collapse = ", " ) # same output
+```
+
+In your own words, describe the difference between the sep and collapse arguments to str_c().
+
+`sep` is a character string to separate the terms while collapse is an optional character string to separate the results.
+
+Use str_length() and str_sub() to extract the middle character from a string. What will you do if the string has an even number of characters?
+```{r}
+s <- "abc"
+str_sub(s, str_length(s)/2+1, str_length(s)/2+1) # since 0 based
+s_even <- "abcd" # middle is b, breaking ties here between b and c
+str_sub(s_even, str_length(s)/2+1, str_length(s)/2+1) # since 0 based
+```
+
+What does str_wrap() do? When might you want to use it?
+Answer: You use it when you need to format some text in a nice manner, for ease of perusing through it.
+```{r}
+?str_wrap
+```
+
+What does str_trim() do? What???s the opposite of str_trim()?
+Answer: We use it when we want to remove whitespace.  `str_pad()` is it's opposite
+```{r}
+?str_pad
+```
+
+Small demo:
 ```{r}
 ?str_trim
 dirtySentence <- "     No spaces in front/end of string.       "
@@ -77,6 +113,23 @@ writeLines(complicatedStr)
 str_view(complicatedStr, "\"\\'\\\\")
 ```
 
+Exercises:
+Explain why each of these strings don't match a `\`: `\`, `\\`, `\\\`.
+Answer: In short, you need an escape `\` for the escape `\\` of this character `\`. So at least 4 `\` chars.
+
+How would you match the sequence `"'\`?
+```{r}
+m <- '\"\'\\\ something'
+writeLines(m)
+str_view(m, '\\"\'\\\\')
+```
+
+What patterns will the regular expression `\..\..\..` match? How would you represent it as a string?
+```{r}
+# This is anything like so: \fg\hj\ki
+pattern <- "\\..\\..\\.." # pattern for these strings
+```
+
 Anchors for making the regular expression so that it matches from the start or end of the string.
 ```{r echo=FALSE}
 anchorStr <- c("all", "starting", "with", "a", "ending", "with", "h")
@@ -84,11 +137,37 @@ str_view(anchorStr, "^a")
 str_view(anchorStr, "h$")
 ```
 
+Exercises:
 Matching literal string `$^$`
 ```{r}
 litStr <- "before$^$after"
 str_view(litStr, "\\$\\^\\$")
 ```
+
+Given the corpus of common words in `stringr::words`, create regular expressions that find all words that:
+
+Start with "a".
+```{r}
+# \\w is short hand for [A-Za-z0-9_]
+pat <- 'a\\w*\\b'
+str_view(words %>% head(), pat)
+```
+
+End with ???t???
+```{r}
+pat <- '[A-Za-z0-9_]*t$'
+str_view(words %>% head(), pat)
+```
+
+Are exactly four letters long. (Don???t cheat by using str_length()!)
+Have seven letters or more.
+```{r}
+pat_4 <- '^....$'
+str_view(words %>% head(), pat_4)
+pat_7plus <- "^.......+$"
+str_view(words %>% head(), pat_7plus)
+```
+
 
 There are a number of special patterns that match more than one character. You've already seen `.`, which matches any character apart from a newline. There are four other useful tools:
 
