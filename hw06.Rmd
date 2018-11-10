@@ -1,11 +1,9 @@
 ---
 title: "Homework 6:Data wrangling wrap up"
-theme: yeti
 output:
   github_document:
     toc: yes
     df_print: paged
-always_allow_html: yes
 ---
 
 ```{r setup, include=FALSE}
